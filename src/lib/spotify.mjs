@@ -195,8 +195,8 @@ export class SpotifyClient {
     return payload.tracks?.items?.filter(Boolean) ?? [];
   }
 
-  createPlaylist(userId, body) {
-    return this.post(`/users/${encodeURIComponent(userId)}/playlists`, body);
+  createPlaylist(_userId, body) {
+    return this.post("/me/playlists", body);
   }
 
   updatePlaylistDetails(playlistId, body) {
