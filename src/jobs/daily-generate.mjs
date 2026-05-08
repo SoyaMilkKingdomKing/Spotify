@@ -450,7 +450,7 @@ async function observeRemovedTracks(db, spotify, userId, playlistRow, now) {
     );
   }
 
-  await db.insert(
+  await db.upsert(
     "listening_events",
     removedRows.map((row) => ({
       user_id: userId,
@@ -467,6 +467,7 @@ async function observeRemovedTracks(db, spotify, userId, playlistRow, now) {
         spotify_track_id: row.spotify_track_id
       }
     })),
+    "user_id,track_id,played_at,source",
     { returning: "minimal" }
   );
 
