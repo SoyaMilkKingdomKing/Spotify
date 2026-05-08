@@ -1,0 +1,41 @@
+name: Daily Spotify Playlists
+
+on:
+  schedule:
+    # Run hourly and let the script check Montreal local time.
+    # This avoids daylight-saving-time drift.
+    - cron: "5 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run immediately even if it is not 6 AM in Montreal"
+        required: false
+        default: "true"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+      SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+      SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+      AUTOMATION_TIMEZONE: America/Toronto
+      RUN_LOCAL_HOUR: "6"
+      TARGET_TRACK_COUNT: "30"
+      DEFAULT_MARKET: CA
+      PLAYLIST_PUBLIC: "false"
+      SCENARIOS: late_night_drive,emo,love_songs,fast_paced
+      ENABLE_SPOTIFY_AUDIO_FEATURES: "false"
+      FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check syntax
+        run: npm run check
+      - name: Generate playlists
+        run: npm run daily

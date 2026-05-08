@@ -1,0 +1,16 @@
+{
+  "name": "spotify-daily-playlist-automation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloud cron automation that refreshes daily Spotify playlists with rule-based scoring.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "auth:url": "node src/scripts/auth-url.mjs",
+    "auth:exchange": "node src/scripts/exchange-code.mjs",
+    "daily": "node src/jobs/daily-generate.mjs",
+    "check": "node --check src/jobs/daily-generate.mjs && node --check src/lib/spotify.mjs && node --check src/lib/supabase.mjs && node --check src/lib/recommender.mjs && node --check src/scripts/auth-url.mjs && node --check src/scripts/exchange-code.mjs"
+  }
+}
