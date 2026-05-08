@@ -550,7 +550,7 @@ function loadRuntimeConfig() {
     forceRun: readBooleanEnv("FORCE_RUN", false),
     savedTracksLimit: readNumberEnv("SAVED_TRACKS_LIMIT", 150),
     searchQueriesPerScenario: readNumberEnv("SEARCH_QUERIES_PER_SCENARIO", 5),
-    searchLimitPerQuery: readNumberEnv("SEARCH_LIMIT_PER_QUERY", 18),
+    searchLimitPerQuery: readNumberEnv("SEARCH_LIMIT_PER_QUERY", 10),
     enableAudioFeatures: readBooleanEnv("ENABLE_SPOTIFY_AUDIO_FEATURES", false)
   };
 }

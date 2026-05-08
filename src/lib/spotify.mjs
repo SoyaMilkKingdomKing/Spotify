@@ -187,7 +187,7 @@ export class SpotifyClient {
     const params = new URLSearchParams({
       q: query,
       type: "track",
-      limit: String(Math.min(limit, 50))
+      limit: String(Math.min(limit, 10))
     });
     if (market) params.set("market", market);
 
