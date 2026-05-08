@@ -1,3 +1,35 @@
+import { existsSync, readFileSync } from "node:fs";
+
+function loadLocalDotenv() {
+  if (!existsSync(".env")) return;
+
+  const lines = readFileSync(".env", "utf8").split(/\r?\n/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const match = trimmed.match(/^([^=]+)=(.*)$/);
+    if (!match) continue;
+
+    const key = match[1].trim();
+    let value = match[2].trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadLocalDotenv();
+
 export function readEnv(name, options = {}) {
   const { required = true, defaultValue } = options;
   const value = process.env[name] ?? defaultValue;
