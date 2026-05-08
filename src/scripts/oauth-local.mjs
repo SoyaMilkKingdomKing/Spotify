@@ -29,7 +29,12 @@ function updateEnvValue(key, value) {
 
 function openBrowser(url) {
   if (process.platform === "win32") {
-    execFile("cmd", ["/c", "start", "", url]);
+    execFile("powershell.exe", [
+      "-NoProfile",
+      "-Command",
+      "Start-Process -FilePath $args[0]",
+      url
+    ]);
     return;
   }
 
