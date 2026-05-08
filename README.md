@@ -74,6 +74,12 @@ npm run auth:url
 
 打开链接并同意授权。浏览器可能显示 localhost 连接失败，这是正常的；从地址栏复制 `code=` 后面的值，或者复制完整 URL。
 
+也可以使用本机 OAuth 小助手自动写入 refresh token：
+
+```bash
+npm run auth:local
+```
+
 交换 refresh token：
 
 ```bash

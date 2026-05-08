@@ -9,8 +9,9 @@
   },
   "scripts": {
     "auth:url": "node src/scripts/auth-url.mjs",
+    "auth:local": "node src/scripts/oauth-local.mjs",
     "auth:exchange": "node src/scripts/exchange-code.mjs",
     "daily": "node src/jobs/daily-generate.mjs",
-    "check": "node --check src/jobs/daily-generate.mjs && node --check src/lib/spotify.mjs && node --check src/lib/supabase.mjs && node --check src/lib/recommender.mjs && node --check src/scripts/auth-url.mjs && node --check src/scripts/exchange-code.mjs"
+    "check": "node --check src/jobs/daily-generate.mjs && node --check src/lib/spotify.mjs && node --check src/lib/supabase.mjs && node --check src/lib/recommender.mjs && node --check src/scripts/auth-url.mjs && node --check src/scripts/oauth-local.mjs && node --check src/scripts/exchange-code.mjs"
   }
 }
