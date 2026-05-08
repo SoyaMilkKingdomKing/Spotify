@@ -192,19 +192,34 @@ async function enrichAndPersistCatalog(db, spotify, candidates, config) {
   ));
   const artistDetails = [];
 
-  for (const batch of chunk(artistIds, 50)) {
-    artistDetails.push(...await spotify.getSeveralArtists(batch));
+  try {
+    for (const batch of chunk(artistIds, 50)) {
+      artistDetails.push(...await spotify.getSeveralArtists(batch));
+    }
+  } catch (error) {
+    console.warn(`Artist details unavailable; continuing with track artist data. ${error.message}`);
   }
 
   const artistDetailsById = new Map(artistDetails.map((artist) => [artist.id, artist]));
-  const artistRows = artistDetails.map((artist) => ({
-    spotify_artist_id: artist.id,
-    name: artist.name,
-    genres: artist.genres ?? [],
-    popularity: artist.popularity ?? null,
-    image_url: artist.images?.[0]?.url ?? null,
-    updated_at: new Date().toISOString()
-  }));
+  const artistNamesById = new Map();
+  for (const candidate of candidates) {
+    for (const artist of candidate.artists) {
+      if (!artistNamesById.has(artist.spotifyArtistId)) {
+        artistNamesById.set(artist.spotifyArtistId, artist.name);
+      }
+    }
+  }
+  const artistRows = artistIds.map((artistId) => {
+    const details = artistDetailsById.get(artistId);
+    return {
+      spotify_artist_id: artistId,
+      name: details?.name ?? artistNamesById.get(artistId) ?? "Unknown artist",
+      genres: details?.genres ?? [],
+      popularity: details?.popularity ?? null,
+      image_url: details?.images?.[0]?.url ?? null,
+      updated_at: new Date().toISOString()
+    };
+  });
   const persistedArtists = await db.upsert("artists", artistRows, "spotify_artist_id");
   const artistDbBySpotifyId = new Map(
     persistedArtists.map((artist) => [artist.spotify_artist_id, artist.id])
