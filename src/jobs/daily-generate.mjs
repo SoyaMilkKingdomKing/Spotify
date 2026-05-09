@@ -394,6 +394,24 @@ async function loadEventStats(db, userId, now) {
   return map;
 }
 
+async function loadGeneratedTrackIdsForDate(db, playlistRows, localDateKey) {
+  const ids = new Set();
+
+  for (const playlistRow of playlistRows) {
+    const rows = await db.select("playlist_tracks", {
+      select: "track_id",
+      playlist_id: eq(playlistRow.id),
+      generation_date: eq(localDateKey)
+    });
+
+    for (const row of rows) {
+      if (row.track_id) ids.add(row.track_id);
+    }
+  }
+
+  return ids;
+}
+
 async function upsertUser(db, spotifyUser, targetTrackCount) {
   const [user] = await db.upsert("users", [
     {
@@ -627,6 +645,9 @@ async function main() {
   const preferences = await loadPreferenceMap(db, user.id);
   const recencyByTrackId = await loadRecentRecommendationMap(db, user.id, now);
   const eventStatsByTrackId = await loadEventStats(db, user.id, now);
+  const selectedTrackIdsForRun = config.forceRun
+    ? new Set()
+    : await loadGeneratedTrackIdsForDate(db, existingPlaylists, localDateKey);
 
   for (const scenario of config.scenarios) {
     const playlistName = `${datePrefix}${scenario.playlistSuffix}`;
@@ -647,6 +668,7 @@ async function main() {
 
     const scopedCandidates = candidates.filter((candidate) =>
       candidate.dbTrackId &&
+      !selectedTrackIdsForRun.has(candidate.dbTrackId) &&
       (
         !candidate.searchScenarioIds.size ||
         candidate.searchScenarioIds.has(scenario.id) ||
@@ -681,6 +703,11 @@ async function main() {
     );
 
     await writeGeneration(db, playlistRow, selected, scenario, localDateKey, now);
+
+    for (const selection of selected) {
+      selectedTrackIdsForRun.add(selection.candidate.dbTrackId);
+    }
+
     await db.update(
       "playlists",
       {
