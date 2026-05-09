@@ -7,8 +7,8 @@ import {
 } from "../lib/spotify.mjs";
 import {
   getDatePrefix,
+  getZonedParts,
   getLocalDateKey,
-  shouldRunForLocalHour
 } from "../lib/time.mjs";
 import {
   cooldownUntilForSelection,
@@ -577,8 +577,10 @@ async function main() {
   const localDateKey = getLocalDateKey(now, config.timezone);
   const datePrefix = getDatePrefix(now, config.timezone);
 
-  if (!config.forceRun && !shouldRunForLocalHour(now, config.timezone, config.runLocalHour)) {
-    console.log(`Not ${config.runLocalHour}:00 in ${config.timezone}; skipping.`);
+  const localParts = getZonedParts(now, config.timezone);
+
+  if (!config.forceRun && localParts.hour < config.runLocalHour) {
+    console.log(`Before ${config.runLocalHour}:00 in ${config.timezone}; skipping.`);
     return;
   }
 
@@ -591,6 +593,20 @@ async function main() {
   const spotify = new SpotifyClient(accessToken);
   const spotifyUser = await spotify.getMe();
   const user = await upsertUser(db, spotifyUser, config.targetTrackCount);
+  const existingPlaylists = await getPlaylistRows(db, user.id);
+
+  if (!config.forceRun) {
+    const generatedToday = new Set(
+      existingPlaylists
+        .filter((playlist) => playlist.last_generated_for_date === localDateKey)
+        .map((playlist) => playlist.scenario)
+    );
+
+    if (config.scenarios.every((scenario) => generatedToday.has(scenario.id))) {
+      console.log(`All configured scenarios already generated for ${localDateKey}; skipping.`);
+      return;
+    }
+  }
 
   console.log(`Generating ${localDateKey} playlists for ${spotifyUser.display_name ?? spotifyUser.id}.`);
 
@@ -599,7 +615,6 @@ async function main() {
   await syncListeningEvents(db, user.id, recentItems);
   await upsertPreferences(db, user.id, candidates);
 
-  const existingPlaylists = await getPlaylistRows(db, user.id);
   for (const playlistRow of existingPlaylists) {
     await observeRemovedTracks(db, spotify, user.id, playlistRow, now);
   }
