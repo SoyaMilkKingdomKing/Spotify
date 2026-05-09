@@ -434,6 +434,11 @@ async function observeRemovedTracks(db, spotify, userId, playlistRow, now) {
     row.spotify_track_id && !currentTrackIds.has(row.spotify_track_id) && !row.removed_at
   );
 
+  if (!currentTrackIds.size && previousRows.length) {
+    console.warn(`Could not read current playlist items for ${playlistRow.scenario}; skipping removal observation.`);
+    return;
+  }
+
   for (const row of removedRows) {
     await db.update(
       "playlist_tracks",
