@@ -2,9 +2,10 @@ name: Daily Spotify Playlists
 
 on:
   schedule:
-    # Run hourly and let the script check Montreal local time.
-    # This avoids daylight-saving-time drift.
-    - cron: "5 * * * *"
+    # Check every 15 minutes during the Montreal morning window.
+    # The script only generates once per local day after RUN_LOCAL_HOUR.
+    # UTC 10-15 covers 6 AM in both EDT and EST.
+    - cron: "5,20,35,50 10-15 * * *"
   workflow_dispatch:
     inputs:
       force:
