@@ -132,9 +132,11 @@ async function collectCandidates(spotify, scenarios, config) {
     }
   }
 
-  const savedTracks = await spotify.getSavedTracks(config.savedTracksLimit, config.market);
-  for (const item of savedTracks) {
-    mergeCandidate(candidates, item.track, "saved", { saved: true });
+  if (config.includeSavedTracks) {
+    const savedTracks = await spotify.getSavedTracks(config.savedTracksLimit, config.market);
+    for (const item of savedTracks) {
+      mergeCandidate(candidates, item.track, "saved", { saved: true });
+    }
   }
 
   for (const [timeRange, weight] of [
@@ -315,7 +317,6 @@ async function upsertPreferences(db, userId, candidates) {
 
   for (const candidate of candidates) {
     const base =
-      (candidate.saved ? 1.4 : 0) +
       candidate.topScore * 1.1 +
       Math.min(candidate.recentPlayCount, 4) * 0.25;
 
@@ -597,6 +598,7 @@ function loadRuntimeConfig() {
     playlistPublic: readBooleanEnv("PLAYLIST_PUBLIC", false),
     forceRun: readBooleanEnv("FORCE_RUN", false),
     savedTracksLimit: readNumberEnv("SAVED_TRACKS_LIMIT", 150),
+    includeSavedTracks: readBooleanEnv("INCLUDE_SAVED_TRACKS_AS_CANDIDATES", false),
     searchQueriesPerScenario: readNumberEnv("SEARCH_QUERIES_PER_SCENARIO", 10),
     searchLimitPerQuery: readNumberEnv("SEARCH_LIMIT_PER_QUERY", 10),
     enableAudioFeatures: readBooleanEnv("ENABLE_SPOTIFY_AUDIO_FEATURES", false)

@@ -76,7 +76,7 @@ function recentRecommendationPenalty(candidate, recencyByTrackId, now) {
   }
 
   const daysSince = diffDays(now, new Date(latest.recommended_at));
-  const highPreference = candidate.saved || candidate.recentPlayCount >= 2 || candidate.topScore >= 0.75;
+  const highPreference = candidate.recentPlayCount >= 2 || candidate.topScore >= 0.75;
 
   if (daysSince < 1.7) {
     return { penalty: 1, freshnessScore: 0, blockedReason: "recommended_too_recently" };
@@ -145,7 +145,6 @@ function similarityPenalty(candidate, selected) {
 
 export function scoreCandidate(candidate, context) {
   const { scenario, preferences, recencyByTrackId, eventStatsByTrackId, now } = context;
-  const trackPreference = preferenceScore(preferences, "track", candidate.spotifyTrackId);
   const artistPreference = preferenceScore(preferences, "artist", candidate.primaryArtistSpotifyId);
   const genrePreference = Math.max(
     0,
@@ -153,10 +152,8 @@ export function scoreCandidate(candidate, context) {
   );
 
   const userTrackAffinity = clamp01(
-    trackPreference * 0.45 +
-      candidate.topScore * 0.25 +
-      (candidate.saved ? 0.25 : 0) +
-      Math.min(candidate.recentPlayCount, 4) * 0.08
+    candidate.topScore * 0.35 +
+      Math.min(candidate.recentPlayCount, 4) * 0.12
   );
   const audioMood = audioMatchScore(candidate, scenario);
   const moodMatch = audioMood === null
@@ -164,7 +161,6 @@ export function scoreCandidate(candidate, context) {
     : clamp01(audioMood * 0.7 + keywordMatchScore(candidate, scenario) * 0.3);
   const genreMatch = clamp01(genreMatchScore(candidate, scenario) * 0.75 + genrePreference * 0.25);
   const artistAffinity = clamp01(artistPreference * 0.7 + candidate.topArtistScore * 0.3);
-  const savedBoost = candidate.saved ? 1 : 0;
   const repeatBoost = clamp01((candidate.recentPlayCount - 1) / 3);
   const discoveryScore = candidate.isExploration ? 1 : 0;
   const scenarioSearchMatch = candidate.searchScenarioIds?.has(scenario.id) ? 1 : 0;
@@ -187,7 +183,6 @@ export function scoreCandidate(candidate, context) {
     0.18 * moodMatch +
     0.14 * genreMatch +
     0.12 * artistAffinity +
-    0.08 * savedBoost +
     0.08 * repeatBoost +
     0.06 * recency.freshnessScore +
     0.04 * discoveryScore +
@@ -207,7 +202,6 @@ export function scoreCandidate(candidate, context) {
       moodMatch,
       genreMatch,
       artistAffinity,
-      savedBoost,
       repeatBoost,
       freshnessScore: recency.freshnessScore,
       discoveryScore,
@@ -291,7 +285,6 @@ export function selectTracks(scoredCandidates, scenario, targetTrackCount) {
 export function cooldownUntilForSelection(selection, now) {
   const candidate = selection.candidate;
   const highPreference =
-    candidate.saved ||
     candidate.recentPlayCount >= 2 ||
     selection.breakdown.userTrackAffinity >= 0.7 ||
     selection.adjustedScore >= 0.55;
