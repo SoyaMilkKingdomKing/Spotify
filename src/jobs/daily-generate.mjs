@@ -28,6 +28,29 @@ function unique(items) {
   return [...new Set(items.filter(Boolean))];
 }
 
+function normalizeDedupePart(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]+/g, " ")
+    .trim();
+}
+
+function normalizeTrackTitle(value) {
+  return normalizeDedupePart(value)
+    .replace(/\b(feat|ft|with)\b.*$/g, "")
+    .replace(/\b(remaster|remastered|live|acoustic|sped up|slowed|radio edit|explicit|clean|mono|stereo|version|bonus track)\b.*$/g, "")
+    .trim();
+}
+
+function buildDedupeKey(candidate) {
+  const artist = normalizeDedupePart(candidate.primaryArtistName);
+  const title = normalizeTrackTitle(candidate.name);
+  return artist && title ? `${artist}:${title}` : candidate.spotifyTrackId;
+}
+
 function inferLanguage(candidate) {
   const text = [candidate.name, candidate.albumName, candidate.primaryArtistName].join(" ");
   if (/[\u4e00-\u9fff]/.test(text)) return "zh";
@@ -75,6 +98,7 @@ function mergeCandidate(map, track, source, extra = {}) {
     recentPlayCount: 0,
     topScore: 0,
     topArtistScore: 0,
+    dedupeKey: null,
     isExploration: false,
     tempo: null,
     energy: null,
@@ -96,6 +120,7 @@ function mergeCandidate(map, track, source, extra = {}) {
     candidate.searchScenarioIds.add(extra.scenarioId);
   }
 
+  candidate.dedupeKey = buildDedupeKey(candidate);
   map.set(track.id, candidate);
   return candidate;
 }
@@ -712,6 +737,7 @@ async function main() {
   const selectedTrackIdsForRun = config.forceRun
     ? new Set()
     : await loadGeneratedTrackIdsForDate(db, existingPlaylists, localDateKey);
+  const selectedDedupeKeysForRun = new Set();
 
   for (const scenario of config.scenarios) {
     const playlistName = `${datePrefix}${scenario.playlistSuffix}`;
@@ -738,6 +764,7 @@ async function main() {
         (!candidateHasKnownUserSource(candidate) && !knownTrackIds.has(candidate.dbTrackId))
       ) &&
       !selectedTrackIdsForRun.has(candidate.dbTrackId) &&
+      !selectedDedupeKeysForRun.has(candidate.dedupeKey) &&
       (
         !candidate.searchScenarioIds.size ||
         candidate.searchScenarioIds.has(scenario.id) ||
@@ -775,6 +802,7 @@ async function main() {
 
     for (const selection of selected) {
       selectedTrackIdsForRun.add(selection.candidate.dbTrackId);
+      selectedDedupeKeysForRun.add(selection.candidate.dedupeKey);
     }
 
     await db.update(

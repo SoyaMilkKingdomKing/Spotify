@@ -216,6 +216,7 @@ export function scoreCandidate(candidate, context) {
 export function selectTracks(scoredCandidates, scenario, targetTrackCount) {
   const selected = [];
   const selectedIds = new Set();
+  const selectedDedupeKeys = new Set();
   const artistCounts = new Map();
   const eligible = scoredCandidates
     .filter((item) => item.eligible)
@@ -233,6 +234,7 @@ export function selectTracks(scoredCandidates, scenario, targetTrackCount) {
     for (const item of eligible) {
       const candidate = item.candidate;
       if (selectedIds.has(candidate.spotifyTrackId)) continue;
+      if (selectedDedupeKeys.has(candidate.dedupeKey)) continue;
       if (mustPickExploration && !candidate.isExploration) continue;
 
       const artistCount = artistCounts.get(candidate.primaryArtistSpotifyId) ?? 0;
@@ -262,6 +264,7 @@ export function selectTracks(scoredCandidates, scenario, targetTrackCount) {
       for (const item of eligible) {
         const candidate = item.candidate;
         if (selectedIds.has(candidate.spotifyTrackId)) continue;
+        if (selectedDedupeKeys.has(candidate.dedupeKey)) continue;
         const artistCount = artistCounts.get(candidate.primaryArtistSpotifyId) ?? 0;
         if (artistCount >= scenario.artistCap) continue;
         best = item;
@@ -273,6 +276,7 @@ export function selectTracks(scoredCandidates, scenario, targetTrackCount) {
 
     selected.push(best);
     selectedIds.add(best.candidate.spotifyTrackId);
+    selectedDedupeKeys.add(best.candidate.dedupeKey);
     artistCounts.set(
       best.candidate.primaryArtistSpotifyId,
       (artistCounts.get(best.candidate.primaryArtistSpotifyId) ?? 0) + 1
