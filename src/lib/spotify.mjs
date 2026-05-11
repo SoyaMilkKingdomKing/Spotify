@@ -151,6 +151,12 @@ export class SpotifyClient {
     return items;
   }
 
+  async containsSavedTracks(ids) {
+    if (!ids.length) return [];
+    const params = new URLSearchParams({ ids: ids.slice(0, 50).join(",") });
+    return this.get(`/me/tracks/contains?${params.toString()}`);
+  }
+
   async getTopTracks(timeRange = "short_term", limit = 50) {
     const params = new URLSearchParams({
       time_range: timeRange,

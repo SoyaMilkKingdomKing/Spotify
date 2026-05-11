@@ -30,6 +30,10 @@ jobs:
       PLAYLIST_PUBLIC: "false"
       SCENARIOS: late_night_drive,emo,love_songs,fast_paced
       ENABLE_SPOTIFY_AUDIO_FEATURES: "false"
+      INCLUDE_SAVED_TRACKS_AS_CANDIDATES: "false"
+      EXCLUDE_SAVED_TRACKS: "true"
+      PREFER_UNHEARD_TRACKS: "true"
+      KNOWN_TRACK_LOOKBACK_DAYS: "180"
       FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
     steps:
       - uses: actions/checkout@v4

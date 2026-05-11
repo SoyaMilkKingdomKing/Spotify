@@ -36,6 +36,15 @@ function inferLanguage(candidate) {
   return null;
 }
 
+function candidateHasKnownUserSource(candidate) {
+  return (
+    candidate.saved ||
+    candidate.sourceSet.has("saved") ||
+    candidate.sourceSet.has("recent") ||
+    [...candidate.sourceSet].some((source) => source.startsWith("top_"))
+  );
+}
+
 function mergeCandidate(map, track, source, extra = {}) {
   if (!track?.id || !track?.uri || track.type !== "track") return null;
 
@@ -174,9 +183,25 @@ async function collectCandidates(spotify, scenarios, config) {
     }
   }
 
+  if (config.excludeSavedTracks || config.preferUnheardTracks) {
+    try {
+      for (const batch of chunk([...candidates.values()], 50)) {
+        const savedFlags = await spotify.containsSavedTracks(
+          batch.map((candidate) => candidate.spotifyTrackId)
+        );
+        savedFlags.forEach((isSaved, index) => {
+          if (isSaved) batch[index].saved = true;
+        });
+      }
+    } catch (error) {
+      console.warn(`Saved-track lookup unavailable; continuing without liked-song exclusion check. ${error.message}`);
+    }
+  }
+
   for (const candidate of candidates.values()) {
     candidate.isExploration =
       candidate.sourceSet.has("search") &&
+      !candidate.saved &&
       !candidate.sourceSet.has("saved") &&
       !candidate.sourceSet.has("recent") &&
       ![...candidate.sourceSet].some((source) => source.startsWith("top_"));
@@ -395,6 +420,23 @@ async function loadEventStats(db, userId, now) {
   return map;
 }
 
+async function loadKnownTrackIds(db, userId, now, lookbackDays) {
+  const since = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+  const ids = new Set();
+
+  const listeningRows = await db.select("listening_events", {
+    select: "track_id",
+    user_id: eq(userId),
+    played_at: gte(since),
+    limit: 5000
+  });
+  for (const row of listeningRows) {
+    if (row.track_id) ids.add(row.track_id);
+  }
+
+  return ids;
+}
+
 async function loadGeneratedTrackIdsForDate(db, playlistRows, localDateKey) {
   const ids = new Set();
 
@@ -599,6 +641,9 @@ function loadRuntimeConfig() {
     forceRun: readBooleanEnv("FORCE_RUN", false),
     savedTracksLimit: readNumberEnv("SAVED_TRACKS_LIMIT", 150),
     includeSavedTracks: readBooleanEnv("INCLUDE_SAVED_TRACKS_AS_CANDIDATES", false),
+    excludeSavedTracks: readBooleanEnv("EXCLUDE_SAVED_TRACKS", true),
+    preferUnheardTracks: readBooleanEnv("PREFER_UNHEARD_TRACKS", true),
+    knownTrackLookbackDays: readNumberEnv("KNOWN_TRACK_LOOKBACK_DAYS", 180),
     searchQueriesPerScenario: readNumberEnv("SEARCH_QUERIES_PER_SCENARIO", 10),
     searchLimitPerQuery: readNumberEnv("SEARCH_LIMIT_PER_QUERY", 10),
     enableAudioFeatures: readBooleanEnv("ENABLE_SPOTIFY_AUDIO_FEATURES", false)
@@ -658,6 +703,12 @@ async function main() {
     ? new Map()
     : await loadRecentRecommendationMap(db, user.id, now);
   const eventStatsByTrackId = await loadEventStats(db, user.id, now);
+  const knownTrackIds = config.preferUnheardTracks
+    ? await loadKnownTrackIds(db, user.id, now, config.knownTrackLookbackDays)
+    : new Set();
+  if (config.preferUnheardTracks) {
+    console.log(`Discovery-first mode: excluding ${knownTrackIds.size} previously played tracks.`);
+  }
   const selectedTrackIdsForRun = config.forceRun
     ? new Set()
     : await loadGeneratedTrackIdsForDate(db, existingPlaylists, localDateKey);
@@ -681,6 +732,11 @@ async function main() {
 
     const scopedCandidates = candidates.filter((candidate) =>
       candidate.dbTrackId &&
+      (!config.excludeSavedTracks || !candidate.saved) &&
+      (
+        !config.preferUnheardTracks ||
+        (!candidateHasKnownUserSource(candidate) && !knownTrackIds.has(candidate.dbTrackId))
+      ) &&
       !selectedTrackIdsForRun.has(candidate.dbTrackId) &&
       (
         !candidate.searchScenarioIds.size ||

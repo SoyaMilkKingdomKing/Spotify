@@ -22,7 +22,8 @@
 - 同一天生成的不同场景歌单之间，默认不重复使用同一首 track。
 - 不做“7 天绝对不重复”。高偏好、重复播放的歌可以在 2 天左右冷却后重新出现。
 - 普通歌曲默认 4 天冷却，探索歌曲默认 6 天冷却。
-- Spotify 最近播放、Top tracks/artists 会提高权重；Liked Songs 默认不会作为候选池，也不会直接加分。
+- 默认使用探索优先模式：Liked Songs、最近播放、Top tracks、以及最近 180 天已播放过的歌不会进入最终歌单。
+- Spotify 最近播放、Top tracks/artists 只作为口味背景信号，用来理解艺人和风格偏好，不直接把这些旧歌塞回歌单。
 - 用户从自动歌单里手动移除的歌，下一次运行会被观察到并降低权重。
 - 每个场景保留一定探索比例，避免全是旧歌。
 - Spotify Audio Features 目前在官方文档中标注为 deprecated，所以默认不依赖它；如果你之后仍想试用，可以把 `ENABLE_SPOTIFY_AUDIO_FEATURES=true`。
