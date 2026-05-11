@@ -2,10 +2,10 @@ name: Daily Spotify Playlists
 
 on:
   schedule:
-    # Check every 15 minutes during the Montreal morning window.
-    # The script only generates once per local day after RUN_LOCAL_HOUR.
-    # UTC 10-15 covers 6 AM in both EDT and EST.
-    - cron: "5,20,35,50 10-15 * * *"
+    # GitHub scheduled workflows can be delayed or occasionally skipped.
+    # Check all day so a missed morning trigger can still catch up later.
+    # The script itself only generates once per local day after RUN_LOCAL_HOUR.
+    - cron: "13,28,43,58 * * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -17,6 +17,9 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: daily-spotify-playlists
+      cancel-in-progress: false
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

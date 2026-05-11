@@ -106,7 +106,7 @@ SPOTIFY_REFRESH_TOKEN
 
 ### 5. 云端定时
 
-`.github/workflows/daily-spotify-playlists.yml` 会每小时触发一次，但脚本只在 Montreal 时间早上 6 点真正执行。这样不用处理夏令时切换。
+`.github/workflows/daily-spotify-playlists.yml` 会全天每 15 分钟触发一次检查，但脚本只会在 Montreal 时间早上 6 点之后、且当天还没有生成过时真正执行。这样即使 GitHub 的早上某次 schedule 延迟或漏触发，后续检查也会自动补跑。
 
 你也可以在 GitHub Actions 页面手动点 `Run workflow`，默认会强制立即跑一次。
 
