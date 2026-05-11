@@ -75,6 +75,15 @@ export function createSupabaseClientFromEnv() {
           Prefer: options.returning === "minimal" ? "return=minimal" : "return=representation"
         }
       });
+    },
+
+    delete(table, filters = {}, options = {}) {
+      return request(`${table}${queryString(filters)}`, {
+        method: "DELETE",
+        headers: {
+          Prefer: options.returning === "minimal" ? "return=minimal" : "return=representation"
+        }
+      });
     }
   };
 }

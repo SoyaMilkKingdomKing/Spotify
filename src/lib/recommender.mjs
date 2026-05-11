@@ -167,6 +167,7 @@ export function scoreCandidate(candidate, context) {
   const savedBoost = candidate.saved ? 1 : 0;
   const repeatBoost = clamp01((candidate.recentPlayCount - 1) / 3);
   const discoveryScore = candidate.isExploration ? 1 : 0;
+  const scenarioSearchMatch = candidate.searchScenarioIds?.has(scenario.id) ? 1 : 0;
   const recency = recentRecommendationPenalty(candidate, recencyByTrackId, now);
   const penalties = eventPenalty(candidate, eventStatsByTrackId);
 
@@ -189,7 +190,8 @@ export function scoreCandidate(candidate, context) {
     0.08 * savedBoost +
     0.08 * repeatBoost +
     0.06 * recency.freshnessScore +
-    0.04 * discoveryScore -
+    0.04 * discoveryScore +
+    0.1 * scenarioSearchMatch -
     recency.penalty -
     penalties.skipPenalty -
     penalties.removedPenalty;
@@ -209,6 +211,7 @@ export function scoreCandidate(candidate, context) {
       repeatBoost,
       freshnessScore: recency.freshnessScore,
       discoveryScore,
+      scenarioSearchMatch,
       recentRecommendationPenalty: recency.penalty,
       skipPenalty: penalties.skipPenalty,
       removedPenalty: penalties.removedPenalty

@@ -46,7 +46,12 @@ export const SCENARIOS = [
       "night drive chill",
       "midnight road songs",
       "深夜 开车 华语",
-      "夜晚 公路 情歌"
+      "夜晚 公路 情歌",
+      "chill r&b late night",
+      "synthwave night drive",
+      "mandopop night drive",
+      "cantonese night songs",
+      "after dark drive"
     ]
   },
   {
@@ -99,7 +104,12 @@ export const SCENARIOS = [
       "heartbreak ballad",
       "sad mandopop",
       "emo 华语",
-      "失恋 情歌"
+      "失恋 情歌",
+      "sad chinese songs",
+      "lonely r&b",
+      "breakup pop",
+      "melancholy mandopop",
+      "sad indie pop"
     ]
   },
   {
@@ -146,7 +156,12 @@ export const SCENARIOS = [
       "romantic pop",
       "r&b love songs",
       "华语 情歌",
-      "经典 情歌"
+      "经典 情歌",
+      "mandopop love ballads",
+      "cantonese love songs",
+      "soft r&b love",
+      "classic mandopop love",
+      "romantic chinese pop"
     ]
   },
   {
@@ -195,7 +210,12 @@ export const SCENARIOS = [
       "high energy songs",
       "dance hits",
       "workout pop",
-      "快节奏 华语"
+      "快节奏 华语",
+      "upbeat mandopop",
+      "party pop hits",
+      "edm pop energetic",
+      "high bpm rap",
+      "running playlist songs"
     ]
   }
 ];

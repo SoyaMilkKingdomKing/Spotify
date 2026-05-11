@@ -533,6 +533,15 @@ async function getOrCreatePlaylist(db, spotify, user, spotifyUserId, scenario, p
 }
 
 async function writeGeneration(db, playlistRow, selected, scenario, localDateKey, now) {
+  await db.delete(
+    "playlist_tracks",
+    {
+      playlist_id: eq(playlistRow.id),
+      generation_date: eq(localDateKey)
+    },
+    { returning: "minimal" }
+  );
+
   const playlistTrackRows = selected.map((selection, index) => ({
     playlist_id: playlistRow.id,
     generation_date: localDateKey,
@@ -588,7 +597,7 @@ function loadRuntimeConfig() {
     playlistPublic: readBooleanEnv("PLAYLIST_PUBLIC", false),
     forceRun: readBooleanEnv("FORCE_RUN", false),
     savedTracksLimit: readNumberEnv("SAVED_TRACKS_LIMIT", 150),
-    searchQueriesPerScenario: readNumberEnv("SEARCH_QUERIES_PER_SCENARIO", 5),
+    searchQueriesPerScenario: readNumberEnv("SEARCH_QUERIES_PER_SCENARIO", 10),
     searchLimitPerQuery: readNumberEnv("SEARCH_LIMIT_PER_QUERY", 10),
     enableAudioFeatures: readBooleanEnv("ENABLE_SPOTIFY_AUDIO_FEATURES", false)
   };
@@ -643,7 +652,9 @@ async function main() {
   }
 
   const preferences = await loadPreferenceMap(db, user.id);
-  const recencyByTrackId = await loadRecentRecommendationMap(db, user.id, now);
+  const recencyByTrackId = config.forceRun
+    ? new Map()
+    : await loadRecentRecommendationMap(db, user.id, now);
   const eventStatsByTrackId = await loadEventStats(db, user.id, now);
   const selectedTrackIdsForRun = config.forceRun
     ? new Set()
